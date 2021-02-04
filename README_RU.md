@@ -90,6 +90,51 @@ public enum StateId
 ```
 public class EnterStateBehaviour : EnterStateBehaviourBase<StateId> {}
 ```
+
+# Создание состояний
+Используя интерфейс IState, мы создаем состояния, например:
+```
+public class AngryState : IState<ICharacter>
+{
+
+    private Vector3 _targetPosition;
+
+    public void Enter(ICharacter context)
+    {
+        
+        // какая то логика
+        _targetPosition = Random.insideUnitSphere * context.CharacterSettings.ArealRadius;
+        _targetPosition.y = 0;
+
+    }
+
+    public void LogicUpdate(ICharacter context)
+    {
+        
+        // какая то логика
+        var currentPosition = context.Transform.position;
+        
+        context.Transform.rotation = Quaternion.Lerp(context.Transform.rotation, 
+            Quaternion.LookRotation(_targetPosition - currentPosition),
+            context.CharacterSettings.RotateSpeed * Time.deltaTime); 
+        
+    }
+    
+    public void PhysicsUpdate(ICharacter context) {}
+
+    public void OnAnimationEvent(ICharacter context, int data)
+    {
+        
+        // какая то логика
+        AudioPlayer.Play(context.Transform.position, 
+            context.CharacterSettings.AngrySound, 1, Random.Range(.8f, 1f));
+        
+    }
+    
+    public void Exit(ICharacter context) {}
+    
+}
+```
 # Использование
 Допустим у вас есть контроллер моба
 ```
@@ -142,4 +187,4 @@ public class MobController : MonoBehaviour, ICharacter, IAnimatorChangeStateHand
     
 }
 ```
-так выглядит наш минимальный контроллер моба.
+Так выглядит наш минимальный контроллер моба.
