@@ -9,18 +9,21 @@
 
 Вы можете поддержать меня и мои проекты https://biba.dev/donation
 
+Давайте обсуждать! Пишите как можно улучшить и про найденные ошибки.
+
 **Ключевые особенности:**
+* компактный, аккуратный и оптимизированный
 * вам не обязательно ставить обратный вызов на каждую анимацию, вы можете просто проигрывать анимацию без логики
 * вы можете поставить обратный вызов на анимацию, но НЕ ДОБАВЛЯТЬ РЕАЛИЗАЦИЮ и все будет работать
 * связь анимации и реализации делается В САМОМ коде (например MobController)
 * ЛЮБОЕ количество реализаций
 * ВСЕ методы состояния (IState) содержат ссылку на контекст (например ICharacter)
-* поддержка Animation Event (события устанавливаемые на файле анимации)
+* поддержка любого количества Animation Event (события устанавливаемые на файле анимации)
 
 # Идея
 Идея проста, у вас есть Animator Controller, который содержит анимации (состояния), при каждом заходе на анимацию (Enter State) срабатывает обратный вызов, который передает в State Machine НОВОЕ состояние, а State Machine устанавливает реализацию под это состояние.
 
-Анимационные клипы и состояния из State Machine связываются через обратный вызов с передачей Enum (id текущего состояния). 
+Анимационные клипы и состояния из State Machine связываются через обратный вызов с передачей enum (id текущего состояния). 
 
 # Описание
 ```
@@ -60,7 +63,7 @@
             public void LogicUpdate() // обновление логики (MonoBehaviour.Update)
             public void PhysicsUpdate() // обновление физики (MonoBehaviour.FixedUpdate)
             public void OnAnimationEvent(int data) // обратный вызов из файла анимации (MonoBehaviour, data = Animation Event Int)
-            public void ChangeState(TEnum id) // сменить состояние (вызыается аниматором, можно вручную)
+            public void ChangeState(TEnum id) // сменить состояние (вызывается аниматором, можно вручную)
     }
 ```
 
@@ -134,8 +137,12 @@ public class AngryState : IState<ICharacter>
     public void Exit(ICharacter context) {}
     
 }
+// для оптимизации, вы можете создавать static состояния (если у вас нет общих полей)
 ```
 # Использование
+В Animator Controller нужно выбрать анимации (состояния) которым вы хотите добавить логику (поведение) и установить им ваш класс **EnterStateBehaviour.cs** с передачей enum id состояния.
+![animator controller](./Documentation/Images/1.png)
+
 Допустим у вас есть контроллер моба
 ```
 public class MobController : MonoBehaviour, ICharacter // интерфейс ICharacter будет нашим контекстом, вы сами его создаете под нужды своего проекта
@@ -145,8 +152,19 @@ public class MobController : MonoBehaviour, ICharacter // интерфейс ICh
     
 }
 ```
+Пример моего интерфейса ICharacter (вы должны сами создать в своем проекте)
+```
+public interface ICharacter
+{
+    
+    Transform Transform { get; }
+    Animator Animator { get; }
+    Transform Target { get; }
+    CharacterSettings CharacterSettings { get; }
 
-Создаем State Machine и обновляем ее состояние 
+}
+```
+Добавляем State Machine и вызываем ее обновление
 ```
 public class MobController : MonoBehaviour, ICharacter
 {
@@ -162,7 +180,7 @@ public class MobController : MonoBehaviour, ICharacter
     }
     
     private void Update() => _stateMachine.LogicUpdate();
-    private void FixedUpdate() => _stateMachine.PhysicsUpdate(); // НЕ обязательно, используйте ТОЛЬКО если вам нужно обновлять физику у состояний
+    private void FixedUpdate() => _stateMachine.PhysicsUpdate(); // НЕ обязательно, применяйте ТОЛЬКО если вам нужно обновлять физику у состояний
     
 }
 ```
@@ -178,6 +196,7 @@ public class MobController : MonoBehaviour, ICharacter, IAnimatorChangeStateHand
     {
         
         _stateMachine = new StateMachine<StateId, ICharacter>(this);
+        _stateMachine.AddState(StateId.Angry, new AngryState()); // связываем enum из аниматора с нашим состоянием
         
     }
     
@@ -187,4 +206,20 @@ public class MobController : MonoBehaviour, ICharacter, IAnimatorChangeStateHand
     
 }
 ```
-Так выглядит наш минимальный контроллер моба.
+Вот и все, так выглядит наш минимальный класс MobController.
+Далее вы можете добавить любое количество состояний:
+```
+    private void Awake()
+    {
+        
+        _stateMachine = new StateMachine<StateId, ICharacter>(this);
+        _stateMachine.AddState(StateId.Walk, new WalkToRandomPointState());
+        //_stateMachine.AddState(StateId.Walk, new WalkToBestPoint());
+        _stateMachine.AddState(StateId.Attack, new AttackWithTimeLimitState(_projectile));
+        _stateMachine.AddState(StateId.Angry, new AngryState());
+        // _stateMachine.AddState(StateId.Angry, Random..... (behavior 1, behavior 2, behavior 3));
+        
+    }
+```
+Если вы хотите добавить события анимации, укажите название функции **OnAnimationEvent**, поле **int** будет вашими данными (**data**), у вашего состояния будет вызвано событие **public void OnAnimationEvent(int data)**
+![animation events](./Documentation/Images/1.png)
