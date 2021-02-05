@@ -222,4 +222,4 @@ public class MobController : MonoBehaviour, ICharacter, IAnimatorChangeStateHand
     }
 ```
 Если вы хотите добавить события анимации, укажите название функции **OnAnimationEvent**, поле **int** будет вашими данными (**data**), у вашего состояния будет вызвано событие **public void OnAnimationEvent(int data)**
-![animation events](./Documentation/Images/1.png)
+![animation events](./Documentation/Images/2.png)
